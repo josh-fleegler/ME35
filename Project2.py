@@ -104,8 +104,8 @@ def training_mode():
         motor_lower_pos = MotorLower1.pos()
         motor_upper_pos = MotorUpper2.pos()
 
-        servo_lower_angle = round((motor_lower_pos % 3840/21.5)) // 30 * 30
-        servo_upper_angle = round((motor_upper_pos % 3840/21.5)) // 30 * 30
+        servo_lower_angle = round((motor_lower_pos % 3840/21.33)) // 30 * 30
+        servo_upper_angle = round((motor_upper_pos % 3840/21.33)) // 30 * 30
 
         ServoLower1.write_angle(servo_lower_angle)
         ServoUpper2.write_angle(servo_upper_angle)
