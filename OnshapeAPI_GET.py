@@ -24,8 +24,8 @@ def wifi_connect():
 
 
 # Onshape API credentials
-ACCESS_KEY = secrets.onshape_api_key
-SECRET_KEY = secrets.onshape_secret_key
+ACCESS_KEY = secrets.on_GmKTpAJedr5xBopZhc0pZ
+SECRET_KEY = secrets.7MW4zZdA6yomWA6AoxtE8SsFWweYLUKi4KO8zj6XHfDAAir9
 
 # double check if you are using Enterprise account
 ONSHAPE_HOST = "https://cad.onshape.com"
