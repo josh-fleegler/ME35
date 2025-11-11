@@ -5,72 +5,66 @@ import numpy as np
 img1 = cv2.imread("/Users/joshuafleegler/Downloads/Apple1.png")
 img2 = cv2.imread("/Users/joshuafleegler/Downloads/Apple2.jpg")
 
-# Convert from BGR (OpenCV default) to RGB
+# Ensure images loaded
+if img1 is None or img2 is None:
+    raise ValueError("Could not load one or both image paths.")
+
+# Convert from BGR (OpenCV default) to RGB for consistent color math
 rgb_img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
 rgb_img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
 
 
-def color_pixel_percentage(img, target_rgb=(255, 0, 0), tolerance=60, min_intensity=0):
+def color_pixel_percentage(img, target_rgb=(255, 0, 0), tolerance=100, min_intensity=30):
     """
-    Returns:
-        percentage of pixels within color tolerance of target_rgb,
-        boolean mask (same size as image, True for counted pixels)
-
-    target_rgb: (R, G, B) tuple of the color to detect
-    tolerance: maximum Euclidean distance in RGB space for a match
-    min_intensity: optional minimum brightness cutoff (to ignore dark/black pixels)
+    Calculates what % of pixels are within a color tolerance of target_rgb.
+    Returns both % and a mask (True for matched pixels).
     """
-    # Convert to float for safe math
     img_float = img.astype(np.float32)
+    target = np.array(target_rgb, dtype=np.float32)
 
-    # Compute Euclidean distance from target color
-    diff = img_float - np.array(target_rgb, dtype=np.float32)
-    dist = np.linalg.norm(diff, axis=2)  # per-pixel distance
+    # Euclidean distance in RGB space
+    dist = np.linalg.norm(img_float - target, axis=2)
 
-    # Optional: skip very dark pixels to avoid noise
+    # Optional: brightness filter (ignore very dark pixels)
     brightness = img_float.mean(axis=2)
     mask = (dist < tolerance) & (brightness > min_intensity)
 
-    color_pixels = np.count_nonzero(mask)
-    total_pixels = img.shape[0] * img.shape[1]
-    percentage = (color_pixels / total_pixels) * 100.0
-
-    return percentage, mask
+    percent = np.count_nonzero(mask) / mask.size * 100
+    return percent, mask
 
 
-# --- User controls ---
-target_rgb = (150, 200, 50)  # red — change to any RGB color
-tolerance = 80           # how close a pixel must be (lower = stricter)
-min_intensity = 40        # ignore dark shadows, optional
+# --- Settings ---
+target_rgb = (255, 0, 0)  # red — change this
+tolerance = 100           # increase if nothing detected
+min_intensity = 30
 
-# --- Compute for both images ---
+# --- Compute ---
 pct1, mask1 = color_pixel_percentage(rgb_img1, target_rgb, tolerance, min_intensity)
 pct2, mask2 = color_pixel_percentage(rgb_img2, target_rgb, tolerance, min_intensity)
 
-print(f"Target RGB: {target_rgb}")
-print(f"Image 1: {pct1:.2f}% matching pixels")
-print(f"Image 2: {pct2:.2f}% matching pixels")
+print(f"Target color: {target_rgb}")
+print(f"Image 1: {pct1:.2f}% matching")
+print(f"Image 2: {pct2:.2f}% matching")
 
-if pct1 > pct2:
-    print("→ Image 1 has more pixels near the target color.")
-elif pct2 > pct1:
-    print("→ Image 2 has more pixels near the target color.")
-else:
-    print("→ Both images have about the same percentage of that color.")
+# --- Visualization ---
+def overlay_mask(img, mask, overlay_color=(0, 255, 0), alpha=0.5):
+    """
+    Overlay matching pixels semi-transparently.
+    overlay_color is in RGB.
+    """
+    overlay = np.zeros_like(img, dtype=np.uint8)
+    overlay[mask] = overlay_color
+    blended = cv2.addWeighted(img, 1.0, overlay, alpha, 0)
+    return blended
 
+overlay1 = overlay_mask(rgb_img1, mask1, overlay_color=(255, 0, 0), alpha=0.5)
+overlay2 = overlay_mask(rgb_img2, mask2, overlay_color=(255, 0, 0), alpha=0.5)
 
-# --- Visualization: highlight only matching pixels ---
-highlight1 = np.zeros_like(rgb_img1)
-highlight1[mask1] = rgb_img1[mask1]
-
-highlight2 = np.zeros_like(rgb_img2)
-highlight2[mask2] = rgb_img2[mask2]
-
-# --- Show results ---
+# --- Show ---
 cv2.imshow("Original 1", cv2.cvtColor(rgb_img1, cv2.COLOR_RGB2BGR))
 cv2.imshow("Original 2", cv2.cvtColor(rgb_img2, cv2.COLOR_RGB2BGR))
-cv2.imshow("Matched Color 1", cv2.cvtColor(highlight1, cv2.COLOR_RGB2BGR))
-cv2.imshow("Matched Color 2", cv2.cvtColor(highlight2, cv2.COLOR_RGB2BGR))
+cv2.imshow("Overlay 1", cv2.cvtColor(overlay1, cv2.COLOR_RGB2BGR))
+cv2.imshow("Overlay 2", cv2.cvtColor(overlay2, cv2.COLOR_RGB2BGR))
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
